@@ -1,0 +1,19 @@
+@import 'node_modules/bootstrap/scss/bootstrap';
+@import 'node_modules/bootstrap-vue/src/index.scss';
+
+.icon {
+  position: relative;
+  bottom: .25em;
+  height: 1.5em;
+}
+
+@include media-breakpoint-up(md) {
+  #mainNav {
+    .navbar-nav {
+      width: 100%;
+    }
+    .nav-github-link {
+      margin-left: auto;
+    }
+  }
+}

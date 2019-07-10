@@ -1,28 +1,31 @@
 <template>
   <div id="app">
-    <img alt="Vue logo" src="./assets/logo.png">
-    <HelloWorld msg="Welcome to Your Vue.js App"/>
+    <b-container>
+      <b-navbar toggleable="md">
+        <b-navbar-brand href="#"><img src="/img/logo_transparent.png" style="height: 100px;" alt="Linn's TV Search"/></b-navbar-brand>
+        <b-navbar-toggle target="mainNav">
+          test?
+        </b-navbar-toggle>
+        <b-collapse is-nav id="mainNav">
+          <b-navbar-nav>
+            <b-nav-item href="">About Us</b-nav-item>
+            <b-nav-item href="https://github.com/SimplyLinn/tvmaze-api-frontend" class="nav-github-link"><img class="icon" src="/img/GitHub-Mark.png"> Github</b-nav-item>
+          </b-navbar-nav>
+        </b-collapse>
+      </b-navbar>
+      <b-row>
+        <b-form-input placeholder="Search for series"></b-form-input>
+      </b-row>
+    </b-container>
   </div>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
 
 export default {
-  name: 'app',
-  components: {
-    HelloWorld
-  }
+  name: 'app'
 }
 </script>
 
 <style>
-#app {
-  font-family: 'Avenir', Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-}
 </style>
