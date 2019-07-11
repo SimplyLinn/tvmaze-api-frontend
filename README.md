@@ -1,5 +1,6 @@
+[![Build Status](https://travis-ci.org/SimplyLinn/tvmaze-api-frontend.svg?branch=master)](https://travis-ci.org/SimplyLinn/tvmaze-api-frontend)
 # tvmaze-api-frontend
-
+[Live build](https://tvmaze.opposite.dev/)
 ## Project setup
 ```
 npm install
