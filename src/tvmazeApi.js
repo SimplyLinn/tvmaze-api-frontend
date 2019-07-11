@@ -67,7 +67,7 @@ const methodExtensions = {
     while(true) {
       try {
         const res = await this.getShowsPage(page);
-        arr.push(...res.data);
+        arr.push(...res.data.filter(e=>e.id>lastId).map(({id, name, image})=>({id, name, image: image && image.medium})));
         page++;
       } catch (err) {
         if(!err.isAxiosError) throw err;
