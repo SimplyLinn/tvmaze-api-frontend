@@ -23,6 +23,9 @@ module.exports = {
       new OfflinePlugin({
         responseStrategy: 'network-first',
         caches: 'all',
+        excludes: [
+          '/CNAME',
+        ],
         externals: [
           '/favicon.ico',
           '/manifest.json',
