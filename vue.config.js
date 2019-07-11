@@ -24,7 +24,10 @@ module.exports = {
         responseStrategy: 'network-first',
         caches: 'all',
         excludes: [
-          '/CNAME',
+          '**/.*',
+          '**/*.map',
+          '**/*.gz',
+          'CNAME'
         ],
         externals: [
           '/favicon.ico',
