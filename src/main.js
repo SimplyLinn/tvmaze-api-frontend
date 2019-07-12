@@ -1,5 +1,5 @@
 import * as OfflinePluginRuntime from 'offline-plugin/runtime';
-OfflinePluginRuntime.install();
+//OfflinePluginRuntime.install();
 
 import Vue from 'vue';
 import VueRouter from 'vue-router';

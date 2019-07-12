@@ -4,7 +4,7 @@
       <b-navbar toggleable="md">
         <b-navbar-brand to="/"><img src="/static/img/logo_transparent.png" style="height: 100px;" alt="Linn's TV Search"/></b-navbar-brand>
         <b-navbar-toggle target="mainNav">
-          test?
+          <img src="/static/img/hamburger_icon.svg" />
         </b-navbar-toggle>
         <b-collapse is-nav id="mainNav">
           <b-navbar-nav>
