@@ -8,7 +8,7 @@ export default {
   name: 'app',
   data() {
     return {
-      src: "http://localhost:8081/static/img/logo_transparent.png",
+      src: "/static/img/logo_transparent.png",
     };
   },
   props: {
@@ -19,7 +19,7 @@ export default {
   mounted () {
     const result = this.result;
     if(!result.thumbUrl) {
-      this.src = "http://localhost:8081/static/img/GitHub-Mark.png";
+      this.src = "/static/img/GitHub-Mark.png";
       return;
     }
     if(result.thumb) {
