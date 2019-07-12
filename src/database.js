@@ -12,7 +12,7 @@ db.shows.hook("creating", function (primKey, obj, trans) {
   if (typeof obj.thumbUrl === 'string' && obj.thumbUrl.startsWith('http:')) {
     obj.thumbUrl = 'https' + obj.thumbUrl.substring(4);
   }
-  if (typeof obj.imageUrl === 'string' && obj.thumbUrl.startsWith('http:')) {
+  if (typeof obj.imageUrl === 'string' && obj.imageUrl.startsWith('http:')) {
     obj.imageUrl = 'https' + obj.imageUrl.substring(4);
   }
 });
