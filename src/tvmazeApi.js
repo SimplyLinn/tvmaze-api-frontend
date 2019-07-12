@@ -1,4 +1,3 @@
-/* eslint-disable */
 import axios from 'axios';
 import {sleep} from './utils';
 
@@ -8,25 +7,21 @@ const axiosInstance = axios.create({
   timeout: 5000,
 });
 
-const Api = Object.create(axiosInstance);
+// Have a request queue to be able to comply with rate limiting
+// and pause the queue while we wait for the rate limiting to stop
+const requestQueue = [];
+let requestQueueRunning = false;
 
-/*
-  Kinda ratelimit friendly API wrapper.
-  Does not keep a global ratelimit timer and queue requests if ratelimits gets reached,
-  but instead puts eat request on its own "retry timer thing". Decided that building an
-  API call queue was out of scope for this trial assignment and moved on to more fruitful work.
+class TVMazeAPI {
+  constructor () {
 
-  I doubt concurrent requests to the API will be made anyway. But it'd be something I would
-  put down the effort in doing in case of actual code that was being written for a client.
-*/
+  }
 
-const methodExtensions = {
-  async wrapRequest(method, ...args) {
+  async doRequest(config) {
     let attempt = 0;
     while(true) {
       try {
-        // Yeah, this is an ugly hack, but it makes rest of code more elegant.
-        return await Reflect.getPrototypeOf(this)[method].call(this,...args);
+        return await axiosInstance.request(config);
       } catch (err) {
         if(!err.isAxiosError) throw err;
         if(!err.response) throw err;
@@ -36,20 +31,108 @@ const methodExtensions = {
         const backoff = Math.min(BACKOFF_BASE * 10, Math.round(BACKOFF_BASE * Math.pow(1.5, attempt)));
         attempt++;
         if(this.maxRetries && attempt >= this.maxRetries) throw err;
-        console.log(`We got ratelimited, waiting ${backoff}ms. We have tried ${attempt} times.`)
+        console.log(`We got ratelimited, waiting ${backoff}ms. We have tried ${attempt} times.`); // eslint-disable-line
         await sleep(backoff);
       }
-    }     
-  },
-  request (...args) { return this.wrapRequest('request', ...args); },
-  get (...args) { return this.wrapRequest('get', ...args); },
-  delete (...args) { return this.wrapRequest('delete', ...args); },
-  head (...args) { return this.wrapRequest('head', ...args); },
-  options (...args) { return this.wrapRequest('options', ...args); },
-  post (...args) { return this.wrapRequest('post', ...args); },
-  put (...args) { return this.wrapRequest('put', ...args); },
-  patch (...args) { return this.wrapRequest('patch', ...args); },
-  async getShowsPage(page) {
+    }    
+  }
+  
+  async runQueue () {
+    requestQueueRunning = true;
+    if(!requestQueue.length) {
+      requestQueueRunning = false;
+      return;
+    }
+    const {config, resolve, reject} = requestQueue.pop();
+    this.doRequest(config).then(resolve).catch(reject).finally(()=>this.runQueue());
+  }
+
+  request (config) {
+    // Since we have a queue, there are times we want to prioritize requests
+    // Such as requests based on user actions, where the latest request tends
+    // to be the most important one for the user.
+    // Put those at front of the queue
+
+    // TODO: implement cancelling of queued request
+    let priority = false;
+    if(config.hasOwnProperty('priority')) {
+      priority = config.priority;
+      delete config.priority;
+    }
+    return new Promise((resolve, reject) => {
+      requestQueue[priority ? 'push' : 'unshift']({
+        config,
+        resolve,
+        reject
+      });
+      if(!requestQueueRunning) this.runQueue();
+    });
+  }
+
+  get (url, config) {
+    return this.request({
+      url,
+      method: 'get',
+      ...(config || {})
+    });
+  }
+
+  delete (url, config) {
+    return this.request({
+      url,
+      method: 'delete',
+      ...(config || {})
+    });
+  }
+
+  head (url, config) {
+    return this.request({
+      url,
+      method: 'head',
+      ...(config || {})
+    });
+  }
+
+  options (url, config) {
+    return this.request({
+      url,
+      method: 'options',
+      ...(config || {})
+    });
+  }
+
+  post (url, data, config) {
+    return this.request({
+      url,
+      method: 'post',
+      data,
+      ...(config || {})
+    });
+  }
+
+  put (url, data, config) {
+    return this.request({
+      url,
+      method: 'put',
+      data,
+      ...(config || {})
+    });
+  }
+
+  patch (url, data, config) {
+    return this.request({
+      url,
+      method: 'patch',
+      data,
+      ...(config || {})
+    });
+  }
+
+  getUri (config) {
+    axiosInstance.getUri(config);
+  }
+
+  async getShowsPage (page) {
     page = page || 0;
     if(typeof page !== 'number') {
       throw new  TypeError(`Invalid type, expected number, got ${typeof page}`);
@@ -58,30 +141,6 @@ const methodExtensions = {
       throw new RangeError('Invalid value, expected positive integer');
     }
     return await this.get(`shows?page=${page}`);
-  },
-  async getShowsFromId(lastId, arr) {
-    lastId = lastId || 0;
-    let page = Math.floor(lastId/250);
-    if (!Array.isArray(arr)) arr = [];
-    
-    while(true) {
-      try {
-        const res = await this.getShowsPage(page);
-        arr.push(...res.data.filter(e=>e.id>lastId).map(({id, name, image})=>({id, name, image: image && image.medium})));
-        page++;
-      } catch (err) {
-        if(!err.isAxiosError) throw err;
-        if(!err.response) throw err;
-
-        // If we 404, we have gone through all pages and should break out of the loop.
-        if(err.response.status === 404) break;
-        
-        throw err;
-      }
-    }
-    return arr;
   }
-};
-const exprt = Object.assign(Api, methodExtensions);
-window.api = exprt;
-export default exprt;
+}
+export default new TVMazeAPI();

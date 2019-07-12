@@ -1,27 +1,19 @@
 <template>
   <b-container class="searchbox">
-    <b-button pill variant="outline-secondary" :pressed="filterOpen" @click="filterOpen=!filterOpen">
-      <div class="icon center">
-        <img src="/static/img/filter_icon.svg" alt="">
-        <img class="onhover" src="/static/img/filter_icon_light.svg" alt="">
-      </div>
-      filters
-    </b-button>
-    <keep-alive>
-      <b-row v-if="filterOpen">
-        FILTER STUFF HERE
-      </b-row>
-    </keep-alive>
-    <b-row v-if="searchString">
-      <h3>You searched for: {{searchString}}</h3>
+    <template v-if="searchQuery.term">
+    <b-row>
+      <b-col>Showing {{`${searchQuery.results.length} result${searchQuery.results.length === 1 ? '' : 's'}`}} for <b>{{searchQuery.term}}</b> (query took {{searchQuery.time}}ms)</b-col>
     </b-row>
+    <result-list :results="searchQuery.results" />
+    </template>
     <b-row v-else>
-      <h3>Start typing to search.</h3>
+      Start typing to search.
     </b-row>
   </b-container>
 </template>
 
 <script>
+import ResultList from './ResultList'
 
 export default {
   name: 'app',
@@ -30,8 +22,11 @@ export default {
       filterOpen: false,
     };
   },
+  components: {
+    'result-list': ResultList,
+  },
   props: {
-    searchString: String,
+    searchQuery: Object,
   },
   methods: {
   }
