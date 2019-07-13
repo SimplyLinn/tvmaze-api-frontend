@@ -1,13 +1,9 @@
 <template>
   <div v-if="results.length">
-    <b-row v-for="{ result } in results" :key="result.id">
-      <b-col>
-        <result-img :result="result" />
-      </b-col>
-      <b-col>
-        {{result.name}}
-      </b-col>
-    </b-row>
+    <template v-for="({ result }, i ) in results">
+    <result-entry :result="result" :key="result.id" ></result-entry>
+    <hr v-if="i < results.length-1" :key="result.id+'hr'" />
+    </template>
   </div>
   <div v-else>
     NO RESULTS TO SHOW!
@@ -15,7 +11,7 @@
 </template>
 
 <script>
-import ResultImg from './ResultImg';
+import ResultEntry from './ResultEntry';
 
 export default {
   name: 'app',
@@ -25,10 +21,17 @@ export default {
     };
   },
   components: {
-    'result-img': ResultImg,
+    'result-entry': ResultEntry,
   },
   props: {
     results: Array,
+  },
+  computed: {
+    sanitizedSummary: {
+      get () {
+        return sanitizeHtml(this.result.summary);
+      }
+    }
   },
   methods: {
   }

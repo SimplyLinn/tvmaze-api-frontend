@@ -1,6 +1,6 @@
 import Api from './tvmazeApi';
 import db, { Show } from './database';
-import { getCurTime, escapeRegExp, getAllWords } from './utils';
+import { getCurTime, asyncMap, getAllWords, SearchCancelledError } from './utils';
 import stringSimilarity from 'string-similarity';
 
 window.db = db;
@@ -41,48 +41,62 @@ class TVMazeController {
     return db.shows.where("nameWords").startsWithIgnoreCase(word).distinct().toArray();
   }
 
-  searchLastCharSpace(typedTermArr) {
+  searchPromises(promiseList, cancelObj) {
     return db.transaction('r', 'shows', async ()=>{
-      const results = await Promise.all(typedTermArr.map(term=>db.shows.where("nameWords").equalsIgnoreCase(term).distinct().primaryKeys()));
-      const ids = results.reduce((wArr, cArr) => {
+      const allIds = await Promise.all(promiseList);
+      if(cancelObj && cancelObj.isCancelled) throw new SearchCancelledError();
+      
+      if(!allIds.length) return [];
+
+      const ids = allIds.reduce((wArr, cArr) => {
         const res = [];
         for (let i = 0; i < wArr.length; i++) {
           if(cArr.includes(wArr[i])) res.push(wArr[i]);
         }
         return res;
       });
-      return await db.shows.where(':id').anyOf(ids).toArray();
+      const results = await db.shows.where(':id').anyOf(ids).toArray();
+      if(cancelObj && cancelObj.isCancelled) throw new SearchCancelledError();
+      return results;
+    });    
+  }
+
+  searchLastCharSpace(typedTermArr, cancelObj) {
+    return db.transaction('r', 'shows', ()=>{
+      return this.searchPromises(typedTermArr.map(term=>db.shows.where("nameWords").equalsIgnoreCase(term).distinct().primaryKeys()));
     });
   }
 
-  searchTypingMultipleWords(lastWord, typedTermArr) {
-    return db.transaction('r', 'shows', async ()=>{
-      const results = await Promise.all(typedTermArr.map(term=>db.shows.where("nameWords").equalsIgnoreCase(term).distinct().primaryKeys()));
-      const resultTyping = await db.shows.where("nameWords").startsWithIgnoreCase(lastWord).distinct().primaryKeys();
-      const ids = results.reduce((wArr, cArr) => {
-        const res = [];
-        for (let i = 0; i < wArr.length; i++) {
-          if(cArr.includes(wArr[i])) res.push(wArr[i]);
-        }
-        return res;
-      }, resultTyping);
-      return await db.shows.where(':id').anyOf(ids).toArray();
+  searchTypingMultipleWords(lastWord, typedTermArr, cancelObj) {
+    return db.transaction('r', 'shows', ()=>{
+      return this.searchPromises([
+        ...typedTermArr.map(term=>db.shows.where("nameWords").equalsIgnoreCase(term).distinct().primaryKeys()),
+        db.shows.where("nameWords").startsWithIgnoreCase(lastWord).distinct().primaryKeys()
+      ], cancelObj);
     });
   }
 
-  async search(term, final) {
+  async search(term, cancelCallback) {
+    const cancelObj = { isCancelled: false };
+    if(typeof cancelCallback === 'function') {
+      cancelCallback(()=>{
+        cancelObj.isCancelled = true;
+      });
+    }
     const termArr = term.split(' ');
-    const lastWord = final ? '' : termArr.pop();
+    const lastWord = termArr.pop();
     const typedTermArr = getAllWords(termArr.join(' '));
     let results;
-    if(lastWord && !typedTermArr.length) results = await this.searchTypingFirstWord(lastWord);
-    else if(!lastWord && typedTermArr.length) results = await this.searchLastCharSpace(typedTermArr);
-    else if(lastWord && typedTermArr.length) results = await this.searchTypingMultipleWords(lastWord, typedTermArr);
+    if(lastWord && !typedTermArr.length) results = await this.searchTypingFirstWord(lastWord, cancelObj);
+    else if(!lastWord && typedTermArr.length) results = await this.searchLastCharSpace(typedTermArr, cancelObj);
+    else if(lastWord && typedTermArr.length) results = await this.searchTypingMultipleWords(lastWord, typedTermArr, cancelObj);
     else return [];
 
     // Sort the found results based on string similarity with the name
     const termLower = term.toLowerCase();
-    return results.map(e=>({result: e, rating: stringSimilarity.compareTwoStrings(e.name.toLowerCase(), termLower)})).sort((a,b) => b.rating-a.rating);
+    const result = (await asyncMap(results, e=>({result: e, rating: stringSimilarity.compareTwoStrings(e.name.toLowerCase(), termLower)}),cancelObj)).sort((a,b) => b.rating-a.rating);
+    if(cancelObj.isCancelled) throw new SearchCancelledError();
+    return result;
   }
 
   parsePage(pageData, pageNum) {
@@ -100,10 +114,12 @@ class TVMazeController {
         cachedShow.id = tvm.id;
         cachedShow.name = tvm.name;
         cachedShow.updated = tvm.updated;
+        cachedShow.premiered = tvm.premiered;
         cachedShow.imageUrl = tvm.image && tvm.image.original;
         cachedShow.type = tvm.type;
+        cachedShow.status = tvm.status;
         cachedShow.summary = tvm.summary;
-        cachedShow.genres = pageData.genres;
+        cachedShow.genres = tvm.genres;
 
         if(tvm.image && tvm.image.medium && cachedShow.thumbUrl !== tvm.image.medium) {
           cachedShow.thumbUrl = tvm.image.medium;

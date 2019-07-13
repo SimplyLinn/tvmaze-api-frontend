@@ -2,8 +2,8 @@ import Dexie from 'dexie';
 import { getAllWords } from './utils';
 
 const db = new Dexie("ShowsDatabase");
-db.version(3).stores({
-  shows: "id,name,*nameWords,status,*genres,updated",
+db.version(4).stores({
+  shows: "id,name,*nameWords",
   //episodes: "id,showId,"
 });
 
