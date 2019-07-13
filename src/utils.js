@@ -1,6 +1,14 @@
 export class SearchCancelledError extends Error {
   constructor() {
     super('The search was cancelled.');
+    this.name = this.constructor.name;
+  }
+}
+
+export class NotFoundError extends Error {
+  constructor() {
+    super('The resource was not found.');
+    this.name = this.constructor.name;
   }
 }
 
@@ -10,10 +18,6 @@ export function sleep(ms) {
 
 export function getCurTime() {
   return (new Date).getTime();
-}
-
-export function escapeRegExp(string) {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
 }
 
 export function getAllWords(text) {

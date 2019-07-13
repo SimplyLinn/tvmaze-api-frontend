@@ -132,7 +132,7 @@ class TVMazeAPI {
     axiosInstance.getUri(config);
   }
 
-  async getShowsPage (page) {
+  getShowsPage (page) {
     page = page || 0;
     if(typeof page !== 'number') {
       throw new  TypeError(`Invalid type, expected number, got ${typeof page}`);
@@ -140,7 +140,11 @@ class TVMazeAPI {
     if(!Number.isInteger(page) || page < 0) {
       throw new RangeError('Invalid value, expected positive integer');
     }
-    return await this.get(`shows?page=${page}`);
+    return this.get(`shows?page=${page}`);
+  }
+
+  getEpisodes (showId) {
+    return this.get(`shows/${showId*1}/episodes`);
   }
 }
 export default new TVMazeAPI();

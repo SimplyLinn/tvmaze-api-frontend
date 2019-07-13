@@ -2,9 +2,8 @@ import Dexie from 'dexie';
 import { getAllWords } from './utils';
 
 const db = new Dexie("ShowsDatabase");
-db.version(4).stores({
-  shows: "id,name,*nameWords",
-  //episodes: "id,showId,"
+db.version(7).stores({
+  shows: "id,*nameWords"
 });
 
 db.shows.hook("creating", function (primKey, obj, trans) {
@@ -55,6 +54,16 @@ const Show = db.shows.defineClass ({
   type: String,
   summary: String,
   genres: [String],
+  episodes: [{
+    name: String,
+    season: Number,
+    number: Number,
+    summary: String,
+    thumb: null,
+    thumbUrl: String,
+    imageUrl: String,
+  }],
+  episodesFetched: Date,
 });
 
 Show.prototype.save = function () {

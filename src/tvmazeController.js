@@ -1,8 +1,8 @@
 import Api from './tvmazeApi';
 import db, { Show } from './database';
-import { getCurTime, asyncMap, getAllWords, SearchCancelledError } from './utils';
+import { getCurTime, asyncMap, getAllWords, SearchCancelledError, NotFoundError } from './utils';
 import stringSimilarity from 'string-similarity';
-
+import Dexie from 'dexie';
 window.db = db;
 const DAY_IN_MILLIS = 24*60*60*1000;
 const PAGE_SIZE = 250;
@@ -18,11 +18,6 @@ class TVMazeController {
     } else {
       this.getNewShows();
     }
-  }
-
-  get useLocal() {
-    // Use local DB if it's fresh enough, or you're offline.
-    return navigator.onLine === false || getCurTime() - this.lastUpdated.getTime() < DAY_IN_MILLIS * 3;
   }
 
   get lastUpdated() {
@@ -168,6 +163,28 @@ class TVMazeController {
   async getNewShows() {
     const lastId = (await db.shows.orderBy(':id').last()).id;
     await this.refreshFromId(lastId);
+  }
+
+  getShow(id) {
+    return db.transaction('rw', 'shows', async ()=>{
+      const show = await db.shows.get(id);
+      if(!show) throw new NotFoundError();
+      if(navigator.onLine === false || show.episodesFetched && getCurTime() - show.episodesFetched.getTime() < DAY_IN_MILLIS)
+        return show;
+      const episodes = (await Dexie.waitFor(Api.getEpisodes(id))).data.map(e=>({
+        name: e.name,
+        season: e.season,
+        number: e.number,
+        summary: e.summary,
+        thumb: null,
+        thumbUrl: e.image && e.image.medium,
+        imageUrl: e.image && e.image.original,
+      }));
+      show.episodes = episodes;
+      show.episodesFetched = new Date();
+      await show.save();
+      return show;
+    });
   }
 }
 

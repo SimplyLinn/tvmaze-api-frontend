@@ -14,7 +14,12 @@ const routes = [
         // when /user/:id/profile is matched
         name: 'show',
         path: ':id',
-        component: Show
+        component: Show,
+        props(route) {
+          const props = { ...route.params }
+          props.id = +props.id
+          return props
+        },
       },
       {
         // UserPosts will be rendered inside User's <router-view>
