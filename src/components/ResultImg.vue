@@ -30,9 +30,9 @@ export default {
             result.thumb = blob;
             result.save();
           });
-        }).catch(err => {
+        }).catch(() => {
           this.src = "/static/img/no-connection-show-thumb.png";
-        });;
+        });
       }
     }
   },

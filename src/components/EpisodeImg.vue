@@ -32,7 +32,7 @@ export default {
           episode.thumb = blob;
           this.show.save();
         });
-      }).catch(err => {
+      }).catch(() => {
         this.src = "/static/img/no-connection-episode-thumb.png";
       });
     }

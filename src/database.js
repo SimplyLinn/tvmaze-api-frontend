@@ -1,5 +1,4 @@
 import Dexie from 'dexie';
-import { getAllWords } from './utils';
 
 const db = new Dexie("ShowsDatabase");
 db.version(9).stores({

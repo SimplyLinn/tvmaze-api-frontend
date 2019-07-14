@@ -27,11 +27,6 @@ export default {
     results: Array,
   },
   computed: {
-    sanitizedSummary: {
-      get () {
-        return sanitizeHtml(this.result.summary);
-      }
-    }
   },
   methods: {
   }

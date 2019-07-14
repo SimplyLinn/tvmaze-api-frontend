@@ -63,7 +63,7 @@ class TVMazeController {
 
   searchLastCharSpace(typedTermArr, cancelObj) {
     return db.transaction('r', 'shows', ()=>{
-      return this.searchPromises(typedTermArr.map(term=>db.shows.where("nameWords").equalsIgnoreCase(term).distinct().primaryKeys()));
+      return this.searchPromises(typedTermArr.map(term=>db.shows.where("nameWords").equalsIgnoreCase(term).distinct().primaryKeys()),cancelObj);
     });
   }
 

@@ -65,12 +65,10 @@
 
 <script>
 import { convertHtmlToText } from '../utils';
-import { EventBus } from '../event-bus';
 import tvmc from '../tvmazeController';
 import ResultImg from './ResultImg';
 import EpisodeImg from './EpisodeImg';
 
-const SUMMARY_LENGTH = 350;
 export default {
   name: 'app',
   data() {

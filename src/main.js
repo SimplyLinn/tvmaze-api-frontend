@@ -24,7 +24,7 @@ db.open().then(()=>{
     async created () {
     }
   }).$mount('#app');
-}).catch(Dexie.UpgradeError,err=>{
+}).catch(Dexie.UpgradeError,()=>{
   localStorage.removeItem('lastUpdated');
   window.indexedDB.databases().then((r) => {
     for (var i = 0; i < r.length; i++) window.indexedDB.deleteDatabase(r[i].name);
