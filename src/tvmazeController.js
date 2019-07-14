@@ -199,11 +199,11 @@ class TVMazeController {
       if(navigator.onLine === false || show.episodesFetched && getCurTime() - show.episodesFetched.getTime() < DAY_IN_MILLIS)
         return show;
       const episodes = (await Dexie.waitFor(Api.getEpisodes(id))).data.map(e=>{
-        if (typeof e.thumbUrl === 'string' && e.thumbUrl.startsWith('http:')) {
-          e.thumbUrl = 'https' + e.thumbUrl.substring(4);
+        if (e.image && typeof e.image.medium === 'string' && e.image.medium.startsWith('http:')) {
+          e.image.medium = 'https' + e.image.medium.substring(4);
         }
-        if (typeof e.imageUrl === 'string' && e.imageUrl.startsWith('http:')) {
-          e.imageUrl = 'https' + e.imageUrl.substring(4);
+        if (e.image && typeof e.image.original === 'string' && e.image.original.startsWith('http:')) {
+          e.image.original = 'https' + e.image.original.substring(4);
         }
         return {
           name: e.name,
