@@ -13,19 +13,54 @@
       </b-col>
     </b-row>
     <hr/>
-    <template v-for="(season, i) in seasons">
-      <b-row v-if="season" :key="`${show.id}s${i}`">
-        <b-col><h5>Season {{i + 1}}</h5></b-col>
-      </b-row>
-      <div v-if="season" :key="`${show.id}s${i}list`">
-        
-        <b-list-group>
-          <b-list-group-item button v-for="episode in season" :key="`${show.id}s${i}e${episode.number}`">S{{String(episode.season).padStart(2,'0')}}E{{String(episode.number).padStart(2,'0')}}: {{episode.name}}</b-list-group-item>
-        </b-list-group>
+    <div v-if="show.episodesFetched">
+      <template v-for="(season, i) in seasons" >
+        <b-row v-if="season" :key="`${show.id}s${i}`">
+          <b-col><h5>Season {{i + 1}}</h5></b-col>
+        </b-row>
+        <div v-if="season" :key="`${show.id}s${i}list`">
+          
+          <b-list-group>
+            <b-list-group-item button v-for="episode in season" :key="`${show.id}s${i}e${episode.number}`" @click="routeEpisode(episode.season, episode.number)">
+              <episode-img :show="show" :episode="episode" />
+              <span style="position: absolute; top: .5em;">S{{pad(episode.season)}}E{{pad(episode.number)}}</span>
+              <b>{{episode.name}}</b>
+            </b-list-group-item>
+          </b-list-group>
+        </div>
+        <hr v-if="season && i < seasons.length - 1" :key="`${show.id}s${i}hr`" />
+      </template>
+    </div>
+    <div v-else-if="isOffline">
+      Episode data unavailable while offline.
+    </div>
+    <div v-else>
+      There are no episodes to show.
+    </div>
+    <b-modal ref="episode-modal" size="lg" @hidden="closeEpisode" :visible="!!selectedEpisode" centered>
+      <template v-if="selectedEpisode">
+        <episode-img :show="show" :episode="selectedEpisode" class="float-left" />
+        {{episodeText}}
+      </template>
+      <div slot="modal-title" v-if="selectedEpisode">
+        {{selectedEpisode.name}} <b-badge>S{{pad(selectedEpisode.season)}}E{{pad(selectedEpisode.number)}}</b-badge>
       </div>
-      <hr v-if="season && i < seasons.length - 1" :key="`${show.id}s${i}hr`" />
-    </template>
+      <div slot="modal-footer" class="w-100" v-if="selectedEpisode">
+        <p class="float-left" v-if="selectedEpisode.airdate">Aired: {{selectedEpisode.airdate}}</p>
+        <b-button
+            variant="danger"
+            size="sm"
+            class="float-right"
+            @click="hideModal"
+          >
+            Close
+        </b-button>
+      </div>
+    </b-modal>
   </b-container>
+  <div v-else-if="isOffline">
+    You are offline and this show is not in the local database.
+  </div>
 </template>
 
 <script>
@@ -33,20 +68,24 @@ import { convertHtmlToText } from '../utils';
 import { EventBus } from '../event-bus';
 import tvmc from '../tvmazeController';
 import ResultImg from './ResultImg';
+import EpisodeImg from './EpisodeImg';
 
 const SUMMARY_LENGTH = 350;
 export default {
   name: 'app',
   data() {
     return {
-      show: null
+      show: null,
+      isOffline: navigator.onLine === false
     };
   },
   components: {
     'result-img': ResultImg,
+    'episode-img': EpisodeImg
   },
   props: {
-    id: Number
+    id: Number,
+    episode: String
   },
   computed: {
     summaryText () {
@@ -75,10 +114,26 @@ export default {
       });
       seasonsArr.forEach(e=>e.sort((a,b)=>a.number - b.number));
       return seasonsArr;
+    },
+    selectedEpisode() {
+      if(!this.episode) {
+        return null;
+      }
+      try {
+        let [, season, ep] = this.episode.match(/S(\d{2,})E(\d{2,})/)
+        season--;
+        ep = +ep;
+        return this.seasons[season].find(e => e.number === ep);
+      } catch (err) {
+        console.error(err);
+        return null;
+      }
+    },
+    episodeText() {
+      if(!this.selectedEpisode) return '';
+      const text = convertHtmlToText(this.selectedEpisode.summary);
+      return text;
     }
-  },
-  mounted() {
-    this.fetchShow(this.id);
   },
   methods: {
     async fetchShow(id) {
@@ -88,6 +143,30 @@ export default {
       } catch (err) {
         console.error(err);
       }
+    },
+    pad(val, size, char) {
+      size = size || 2;
+      char = char || '0';
+      return String(val).padStart(size, char);
+    },
+    routeEpisode(s, e) {
+      const seasonString = `S${this.pad(s)}E${this.pad(e)}`;
+      this.$router.push({ name: 'show', params: { id: this.show.id, episode: seasonString } })
+    },
+    closeEpisode() {
+      this.$router.push({ name: 'show', params: { id: this.show.id } })
+    },
+    hideModal() {
+        this.$refs['episode-modal'].hide()
+    },
+    online() {
+      this.isOffline = false;
+      if(!this.show || !this.show.episodes) {
+        this.fetchShow(this.id);
+      }
+    },
+    offline() {
+      this.isOffline = true;
     }
   },
   watch: {
@@ -95,6 +174,15 @@ export default {
       if(oldId === newId) return;
       this.fetchShow(newId);
     }
+  },
+  mounted() {
+    window.addEventListener('online', this.online);
+    window.addEventListener('offline', this.offline);
+    this.fetchShow(this.id);
+  },
+  beforeDestroy() {
+    window.removeEventListener('click', this.online);
+    window.removeEventListener('offline', this.offline);
   }
 }
 </script>

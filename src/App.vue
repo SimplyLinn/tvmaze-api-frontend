@@ -1,6 +1,7 @@
 <template>
   <div id="app">
     <b-container>
+      <b-alert style="margin-top: 5px;" :show="isOffline" variant="warning">You are offline, functionality and data available will be limited.</b-alert>
       <b-navbar toggleable="md">
         <b-navbar-brand to="/"><img src="/static/img/logo_transparent.png" style="height: 100px;" alt="Linn's TV Search"/></b-navbar-brand>
         <b-navbar-toggle target="mainNav">
@@ -22,6 +23,27 @@
 <script>
 
 export default {
-  name: 'app'
+  name: 'app',
+  data() {
+    return {
+      isOffline: navigator.onLine === false
+    };
+  },
+  methods: {
+    online() {
+      this.isOffline = false;
+    },
+    offline() {
+      this.isOffline = true;
+    }
+  },
+  mounted() {
+    window.addEventListener('online', this.online);
+    window.addEventListener('offline', this.offline);
+  },
+  beforeDestroy() {
+    window.removeEventListener('click', this.online);
+    window.removeEventListener('offline', this.offline);
+  }
 }
 </script>

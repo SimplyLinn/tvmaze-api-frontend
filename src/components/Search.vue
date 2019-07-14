@@ -33,7 +33,7 @@ export default {
     'search-results': SearchResults,
   },
   methods: {
-    onCloseSeacrh() {
+    onCloseSearch() {
       this.hasFocus = false;
     },
     onfocus() {
@@ -84,7 +84,7 @@ export default {
   mounted() {
     document.addEventListener('click', this.onPageClick);
 
-    this.busHandler = () => this.onCloseSeacrh();
+    this.busHandler = () => this.onCloseSearch();
     EventBus.$on('closeSearch', this.busHandler);
   },
   beforeDestroy() {

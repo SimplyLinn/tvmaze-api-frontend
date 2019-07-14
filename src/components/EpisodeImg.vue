@@ -1,5 +1,5 @@
 <template>
-  <img :src="src" :alt="episode.name"  />
+  <img style="margin-right: 1em;" :src="src" :alt="episode.name"  />
 </template>
 
 <script>
@@ -12,6 +12,7 @@ export default {
     };
   },
   props: {
+    show: Object,
     episode: Object,
   },
   methods: {
@@ -19,7 +20,7 @@ export default {
   mounted () {
     const episode = this.episode;
     if(!episode.thumbUrl) {
-      this.src = "/static/img/GitHub-Mark.png";
+      this.src = "/static/img/no-image-episode-thumb.png";
       return;
     }
     if(episode.thumb) {
@@ -29,8 +30,10 @@ export default {
         res.blob().then(blob=>{
           this.src = URL.createObjectURL(blob);
           episode.thumb = blob;
-          episode.save();
+          this.show.save();
         });
+      }).catch(err => {
+        this.src = "/static/img/no-connection-episode-thumb.png";
       });
     }
   }

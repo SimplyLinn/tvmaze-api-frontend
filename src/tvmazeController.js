@@ -5,6 +5,7 @@ import stringSimilarity from 'string-similarity';
 import Dexie from 'dexie';
 window.db = db;
 const DAY_IN_MILLIS = 24*60*60*1000;
+const HOUR_IN_MILLIS = 60*60*1000;
 const PAGE_SIZE = 250;
 
 class TVMazeController {
@@ -13,11 +14,7 @@ class TVMazeController {
     const timeNum = Number.parseInt(timeStr);
     this._lastUpdated = new Date(timeNum > 0 ? timeNum : 0);
 
-    if(getCurTime() - this.lastUpdated.getTime() > DAY_IN_MILLIS) {
-      this.refreshShows();
-    } else {
-      this.getNewShows();
-    }
+    this.doRefresh();
   }
 
   get lastUpdated() {
@@ -30,6 +27,14 @@ class TVMazeController {
     }
     localStorage.setItem('lastUpdated', val.getTime()+'');
     this._lastUpdated = val;
+  }
+
+  doRefresh() {
+    if(getCurTime() - this.lastUpdated.getTime() > DAY_IN_MILLIS) {
+      this.refreshShows();
+    } else if(getCurTime() - this.lastUpdated.getTime() > HOUR_IN_MILLIS) {
+      this.getNewShows();
+    }
   }
 
   searchTypingFirstWord(word) {
@@ -94,6 +99,39 @@ class TVMazeController {
     return result;
   }
 
+  parseShow(tvm) {
+
+    return db.transaction('rw', db.shows, async ()=>{
+      const cachedShow = (await db.shows.get(tvm.id)) || new Show();
+      if(cachedShow.updated === tvm.updated) return cachedShow;
+      cachedShow.id = tvm.id;
+      cachedShow.name = tvm.name;
+      cachedShow.updated = tvm.updated;
+      cachedShow.premiered = tvm.premiered;
+      cachedShow.imageUrl = tvm.image && tvm.image.original;
+      cachedShow.type = tvm.type;
+      cachedShow.status = tvm.status;
+      cachedShow.summary = tvm.summary;
+      cachedShow.genres = tvm.genres;
+
+      if(tvm.image && tvm.image.medium && cachedShow.thumbUrl !== tvm.image.medium) {
+        cachedShow.thumbUrl = tvm.image.medium;
+        cachedShow.thumb = null;
+      }
+
+      if (typeof cachedShow.name === 'string') cachedShow.nameWords = getAllWords(cachedShow.name);
+      if (typeof cachedShow.thumbUrl === 'string' && cachedShow.thumbUrl.startsWith('http:')) {
+        cachedShow.thumbUrl = 'https' + cachedShow.thumbUrl.substring(4);
+      }
+      if (typeof cachedShow.imageUrl === 'string' && cachedShow.imageUrl.startsWith('http:')) {
+        cachedShow.imageUrl = 'https' + cachedShow.imageUrl.substring(4);
+      }
+
+      await cachedShow.save();
+      return cachedShow;
+    });
+  }
+
   parsePage(pageData, pageNum) {
     return db.transaction('rw', db.shows, async ()=>{
       const lowestId = pageNum * PAGE_SIZE;
@@ -103,25 +141,7 @@ class TVMazeController {
       const cachedKeys = await cachedEntries.primaryKeys();
       db.shows.bulkDelete(cachedKeys.filter(id=>!pageData.find(e2=>id === e2.id)));
       for(let i = 0; i < pageData.length; i++) {
-        const tvm = pageData[i];
-        const cachedShow = (await db.shows.get(tvm.id)) || new Show();
-        if(cachedShow.updated === tvm.updated) continue;
-        cachedShow.id = tvm.id;
-        cachedShow.name = tvm.name;
-        cachedShow.updated = tvm.updated;
-        cachedShow.premiered = tvm.premiered;
-        cachedShow.imageUrl = tvm.image && tvm.image.original;
-        cachedShow.type = tvm.type;
-        cachedShow.status = tvm.status;
-        cachedShow.summary = tvm.summary;
-        cachedShow.genres = tvm.genres;
-
-        if(tvm.image && tvm.image.medium && cachedShow.thumbUrl !== tvm.image.medium) {
-          cachedShow.thumbUrl = tvm.image.medium;
-          cachedShow.thumb = null;
-        }
-
-        await cachedShow.save();
+        await this.parseShow(pageData[i]);
       }
     });
   }
@@ -161,14 +181,21 @@ class TVMazeController {
   }
 
   async getNewShows() {
-    const lastId = (await db.shows.orderBy(':id').last()).id;
+    const lastId = ((await db.shows.orderBy(':id').last()) || {id: 0}).id;
     await this.refreshFromId(lastId);
   }
 
   getShow(id) {
     return db.transaction('rw', 'shows', async ()=>{
-      const show = await db.shows.get(id);
-      if(!show) throw new NotFoundError();
+      let show = await db.shows.get(id).catch(err => {console.log('yup, this fails'); throw err});
+      if(!show) {
+        try {
+          show = await this.parseShow((await Dexie.waitFor(Api.getSingleShow(id))).data);
+        } catch (err) {
+          if(err.response && err.response.status === 404) throw new NotFoundError();
+          throw err;
+        }
+      }
       if(navigator.onLine === false || show.episodesFetched && getCurTime() - show.episodesFetched.getTime() < DAY_IN_MILLIS)
         return show;
       const episodes = (await Dexie.waitFor(Api.getEpisodes(id))).data.map(e=>({
@@ -179,6 +206,7 @@ class TVMazeController {
         thumb: null,
         thumbUrl: e.image && e.image.medium,
         imageUrl: e.image && e.image.original,
+        airdate: e.airdate
       }));
       show.episodes = episodes;
       show.episodesFetched = new Date();
@@ -188,4 +216,10 @@ class TVMazeController {
   }
 }
 
-export default new TVMazeController();
+const instance = new TVMazeController();
+
+window.addEventListener('online', ()=>{
+  instance.doRefresh();
+});
+
+export default instance;

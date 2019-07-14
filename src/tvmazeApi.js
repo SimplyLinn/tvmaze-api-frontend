@@ -144,7 +144,11 @@ class TVMazeAPI {
   }
 
   getEpisodes (showId) {
-    return this.get(`shows/${showId*1}/episodes`);
+    return this.get(`shows/${+showId}/episodes`);
+  }
+
+  getSingleShow (showId) {
+    return this.get(`shows/${+showId}`);
   }
 }
 export default new TVMazeAPI();

@@ -18,7 +18,7 @@ export default {
     loadImage(result) {
       result = result || this.result;
       if(!result.thumbUrl) {
-        this.src = "/static/img/GitHub-Mark.png";
+        this.src = "/static/img/no-image-show-thumb.png";
         return;
       }
       if(result.thumb) {
@@ -30,7 +30,9 @@ export default {
             result.thumb = blob;
             result.save();
           });
-        });
+        }).catch(err => {
+          this.src = "/static/img/no-connection-show-thumb.png";
+        });;
       }
     }
   },
