@@ -198,16 +198,24 @@ class TVMazeController {
       }
       if(navigator.onLine === false || show.episodesFetched && getCurTime() - show.episodesFetched.getTime() < DAY_IN_MILLIS)
         return show;
-      const episodes = (await Dexie.waitFor(Api.getEpisodes(id))).data.map(e=>({
-        name: e.name,
-        season: e.season,
-        number: e.number,
-        summary: e.summary,
-        thumb: null,
-        thumbUrl: e.image && e.image.medium,
-        imageUrl: e.image && e.image.original,
-        airdate: e.airdate
-      }));
+      const episodes = (await Dexie.waitFor(Api.getEpisodes(id))).data.map(e=>{
+        if (typeof e.thumbUrl === 'string' && e.thumbUrl.startsWith('http:')) {
+          e.thumbUrl = 'https' + e.thumbUrl.substring(4);
+        }
+        if (typeof cachedShow.imageUrl === 'string' && cachedShow.imageUrl.startsWith('http:')) {
+          e.imageUrl = 'https' + e.imageUrl.substring(4);
+        }
+        return {
+          name: e.name,
+          season: e.season,
+          number: e.number,
+          summary: e.summary,
+          thumb: null,
+          thumbUrl: e.image && e.image.medium,
+          imageUrl: e.image && e.image.original,
+          airdate: e.airdate
+        }
+      });
       show.episodes = episodes;
       show.episodesFetched = new Date();
       await show.save();

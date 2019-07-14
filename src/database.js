@@ -2,7 +2,7 @@ import Dexie from 'dexie';
 import { getAllWords } from './utils';
 
 const db = new Dexie("ShowsDatabase");
-db.version(8).stores({
+db.version(9).stores({
   shows: "id,*nameWords"
 });
 
