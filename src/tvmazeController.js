@@ -202,7 +202,7 @@ class TVMazeController {
         if (typeof e.thumbUrl === 'string' && e.thumbUrl.startsWith('http:')) {
           e.thumbUrl = 'https' + e.thumbUrl.substring(4);
         }
-        if (typeof cachedShow.imageUrl === 'string' && cachedShow.imageUrl.startsWith('http:')) {
+        if (typeof e.imageUrl === 'string' && e.imageUrl.startsWith('http:')) {
           e.imageUrl = 'https' + e.imageUrl.substring(4);
         }
         return {
