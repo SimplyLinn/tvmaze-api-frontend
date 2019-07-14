@@ -8,7 +8,7 @@ export default {
   name: 'app',
   data() {
     return {
-      src: "/static/img/logo_transparent.png",
+      src: "/static/img/placeholder-episode-thumb.png",
     };
   },
   props: {
