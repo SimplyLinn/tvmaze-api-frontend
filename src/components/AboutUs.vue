@@ -14,7 +14,10 @@
     </p>
     <p>
       Another place where corners where cut, design wise, is that I'm trusting the size of the thumbnails from the tvmaze API. And I didn't structure
-      my scss file in any logical way, nor did I split it up into multiple files. I gave myself the deadline Sunday night and in order to meet that
+      my scss file in any logical way, nor did I split it up into multiple files.
+    </p>
+    <p>
+      Also, I wish I had time to implement better error handling and proper testing. Buuut, I gave myself the deadline Sunday night and in order to meet that
       tight of a deadline some corners had to be cut.
     </p>
     <p>
