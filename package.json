@@ -14,7 +14,7 @@
     "bootstrap-vue": "^2.0.0-rc.26",
     "core-js": "^2.6.5",
     "debounce": "^1.2.0",
-    "dexie": "^2.0.4",
+    "dexie": "^3.2.2",
     "jquery": "^3.4.1",
     "sanitize-html": "^1.20.1",
     "string-similarity": "^3.0.0",
